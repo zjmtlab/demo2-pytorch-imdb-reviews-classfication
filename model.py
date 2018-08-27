@@ -1,0 +1,58 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+
+import torch
+import torch.autograd as autograd
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import codecs
+import time
+import data
+from torchvision import transforms
+from torchvision import datasets
+from torch.utils.data import DataLoader
+import numpy as np
+
+
+EMBEDDING_DIM = 50
+HIDDEN_DIM = 100
+BATCH_SIZE = 100
+EPOCH_NUM = 20
+
+class LSTMClassifier(nn.Module):
+
+    def __init__(self, embedding_dim, hidden_dim, vocab_size):
+        super(LSTMClassifier, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.word_embeddings = nn.Embedding(vocab_size, embedding_dim)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers=1, dropout=0, batch_first=True)
+        self.hidden2tag = nn.Linear(hidden_dim, 2)
+        self.hidden = self.init_hidden()
+
+    def init_hidden(self):
+        return (torch.zeros(1, BATCH_SIZE, self.hidden_dim),
+                torch.zeros(1, BATCH_SIZE, self.hidden_dim))
+
+    def forward(self, sentence, length):
+        embeds = self.word_embeddings(sentence)
+
+        embeds = torch.nn.utils.rnn.pack_padded_sequence(embeds, length, batch_first=True)
+        #lstm_out, self.hidden = self.lstm(embeds.view(len(sentence), BATCH_SIZE, -1), self.hidden)
+        lstm_out, self.hidden = self.lstm(embeds, self.hidden)
+        lstm_out, _ = torch.nn.utils.rnn.pad_packed_sequence(lstm_out, batch_first=True)
+        
+        #lstm_out = lstm_out.transpose(0, 1)
+        #out = self.hidden2tag(lstm_out[:, -1, :])
+        length = length -1
+        out = lstm_out[np.arange(lstm_out.shape[0]), length, :]
+        
+        out = F.relu(out)
+        out = self.hidden2tag(out)
+
+        '''print("***************")
+        print(out.size())'''
+        tag_scores = torch.log_softmax(out, dim=1)
+        #tag_scores = torch.argmax(torch.sigmoid(out), 1)
+       #tag_scores = tag_scores.float()
+        return tag_scores
