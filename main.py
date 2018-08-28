@@ -20,13 +20,11 @@ trainids, trainseqs, trainlabels = data.load_train_data()
 testids, testseqs = data.load_test_data()
 word_to_ix = data.load_ix_dics()
 
-print("load data complete---------")
 train_loader = data.create_dataset(trainids, trainseqs, trainlabels, word_to_ix, True, model.BATCH_SIZE)
 test_loader = data.create_dataset(testids, testseqs, [], word_to_ix, False, model.BATCH_SIZE)
 
 lstmmodel = model.LSTMClassifier(model.EMBEDDING_DIM, model.HIDDEN_DIM, len(word_to_ix))
 loss_function = nn.NLLLoss()
-#optimizer = optim.SGD(lstmmodel.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-5)
 optimizer = optim.Adam(lstmmodel.parameters(), lr=0.001)
 
 for epoch in range(model.EPOCH_NUM):

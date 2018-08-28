@@ -38,21 +38,15 @@ class LSTMClassifier(nn.Module):
         embeds = self.word_embeddings(sentence)
 
         embeds = torch.nn.utils.rnn.pack_padded_sequence(embeds, length, batch_first=True)
-        #lstm_out, self.hidden = self.lstm(embeds.view(len(sentence), BATCH_SIZE, -1), self.hidden)
         lstm_out, self.hidden = self.lstm(embeds, self.hidden)
         lstm_out, _ = torch.nn.utils.rnn.pad_packed_sequence(lstm_out, batch_first=True)
         
-        #lstm_out = lstm_out.transpose(0, 1)
-        #out = self.hidden2tag(lstm_out[:, -1, :])
         length = length -1
         out = lstm_out[np.arange(lstm_out.shape[0]), length, :]
         
         out = F.relu(out)
         out = self.hidden2tag(out)
 
-        '''print("***************")
-        print(out.size())'''
         tag_scores = torch.log_softmax(out, dim=1)
-        #tag_scores = torch.argmax(torch.sigmoid(out), 1)
-       #tag_scores = tag_scores.float()
+
         return tag_scores
